@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.28;
-import {ERC20,ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
+import {ERC20, ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /*
  * @title DecentralizedStableCoin
@@ -16,33 +16,34 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 DSCEngine smart contract.
  */
 
-contract DecentralizedStableCoin is ERC20Burnable,Ownable{
-    constructor()ERC20("Decentralized Stable Coin","DSC")Ownable(msg.sender){}
+contract DecentralizedStableCoin is ERC20Burnable, Ownable {
+    constructor() ERC20("Decentralized Stable Coin", "DSC") Ownable(msg.sender) {}
+
     error DecentralizedStableCoin_MustBeMoreThanZero();
     error DecentralizedStableCoin_MustBeLessThanSupply();
     error DecentralizedStableCoin_Cannotsendtozerothaddress();
 
-    function burn(uint256 _amount) public override onlyOwner{
+    function burn(uint256 _amount) public override onlyOwner {
         uint256 balance = balanceOf(msg.sender);
-        if(_amount<=0){
+        if (_amount <= 0) {
             revert DecentralizedStableCoin_MustBeMoreThanZero();
         }
 
-        if(balance<_amount){
+        if (balance < _amount) {
             revert DecentralizedStableCoin_MustBeLessThanSupply();
         }
 
         super.burn(_amount);
     }
 
-    function mint(address _to,uint256 _amount) external onlyOwner returns(bool){
-        if(address(0)==_to){
+    function mint(address _to, uint256 _amount) external onlyOwner returns (bool) {
+        if (address(0) == _to) {
             revert DecentralizedStableCoin_Cannotsendtozerothaddress();
         }
-        if(_amount<=0){
+        if (_amount <= 0) {
             revert DecentralizedStableCoin_MustBeMoreThanZero();
         }
-        super._mint(_to,_amount);
+        super._mint(_to, _amount);
         return true;
     }
 }

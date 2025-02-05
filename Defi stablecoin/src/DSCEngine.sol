@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.28;
+import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /*
  * @title DSCEngine
@@ -21,10 +23,22 @@ pragma solidity 0.8.28;
  * @notice This contract is based on the MakerDAO DSS system
  */
 
-contract DSCEngine {
+contract DSCEngine is ReentrancyGuard{
 
     //errors
     error Amount_should_be_more_than_zero();
+    error TokenAddressessAndPriceFeedAddressessShouldBeEqual();
+    error TokenNotSupported();
+
+    //state variables
+    mapping(address token =>address priceFeed) private s_priceFeeds;
+    mapping(address user=>mapping(address tokenaddress=>uint256 amount)) private s_CollateralDeposited;
+
+
+    //events
+    event CollateralDeposited(address indexed user, address indexed token, uint256 indexed amount);
+
+    DecentralizedStableCoin private immutable i_dsc;
 
     //Modifiers
     modifier morethanZero(uint256 _amount) {
@@ -34,9 +48,26 @@ contract DSCEngine {
        _;
     }
 
+    modifier isAllowedToken(address token){
+        if(s_priceFeeds[token]!=address(0)){
+            revert TokenNotSupported();
+        }
+        _;
+    }
+
 
     //functions
-   constructor() public{}
+   constructor(address[] memory tokenAddressess,
+                address[] memory priceFeedAddressess,
+                address dscAddress ) {
+                    if(tokenAddressess.length!=priceFeedAddressess.length){
+                        revert TokenAddressessAndPriceFeedAddressessShouldBeEqual();
+                    }
+                    for(uint256 i=0;i<tokenAddressess.length;i++){
+                        s_priceFeeds[tokenAddressess[i]]=priceFeedAddressess[i];
+                    }
+                    i_dsc=DecentralizedStableCoin(dscAddress);
+                }
 
    //external functions
 
@@ -46,11 +77,14 @@ contract DSCEngine {
     function depositCollateralAndMintDSC()  external{}
 
     /*
+    *@notice follows CEI
     *@param tokenCollateralAddress: The address of the token to be deposited as collateral
     *@param amountCollateral: The amount of collateral to be deposited
     */
     function depositCollateral(address tokenCollateralAddress, uint256 amountCollateral) external
-     morethanZero(amountCollateral){
+     morethanZero(amountCollateral) isAllowedToken(tokenCollateralAddress) nonReentrant{
+        s_CollateralDeposited[msg.sender][tokenCollateralAddress]+=amountCollateral;
+        emit CollateralDeposited(msg.sender,tokenCollateralAddress,amountCollateral);
 
      }
 
