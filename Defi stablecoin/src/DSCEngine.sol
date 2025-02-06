@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /*
  * @title DSCEngine
@@ -36,6 +37,9 @@ contract DSCEngine is ReentrancyGuard{
     mapping(address token =>address priceFeed) private s_priceFeeds;
     mapping(address user=>mapping(address tokenaddress=>uint256 amount)) private s_CollateralDeposited;
     mapping(address user=>uint256 amountDSCminted) private s_DSCMinted;
+    address[] private s_Collateraltokens;
+    uint256 private constant ADDITIONAL_PRICE_FEED=1e10;
+        uint256 private constant PRECISION=1e18;
 
 
     //events
@@ -68,6 +72,7 @@ contract DSCEngine is ReentrancyGuard{
                     }
                     for(uint256 i=0;i<tokenAddressess.length;i++){
                         s_priceFeeds[tokenAddressess[i]]=priceFeedAddressess[i];
+                        s_Collateraltokens.push(tokenAddressess[i]);
                     }
                     i_dsc=DecentralizedStableCoin(dscAddress);
                 }
@@ -118,6 +123,39 @@ contract DSCEngine is ReentrancyGuard{
 
 
     //private functions
+    function   _Getaccountinfo(address user) private view returns(uint256 TotalDSCMinted,uint256 collateralTotalUsd){
+              TotalDSCMinted=s_DSCMinted[user];
+              collateralTotalUsd= getAccountCollateralValueinUsd(user);
+    }
+    /*
+    *Returns how close a user is to liquidation 
+    *If a user goes below 1, they can get  liquidated
+    */
+    function _healthFactor(address user) private view returns(uint256){
+        (uint256 totalCollateralValue,uint256 totalDSCValueinUsd)=_Getaccountinfo(user);
+    }
+
+    function _revertifHealthfactorisBroken(address user) internal view{
+
+    }
 
 
+//public functions
+function getAccountCollateralValueinUsd(address user) public view returns(uint256 totalcollateralvalueinusd){
+   for(uint256 i=0;i<s_Collateraltokens.length;i++){
+       address token=s_Collateraltokens[i];
+       uint256 amount=s_CollateralDeposited[user][token];
+         totalcollateralvalueinusd =getUSDvalue(token,amount);
+       
+   }
+   return totalcollateralvalueinusd;
+
+
+}
+
+function getUSDvalue(address token,uint256 amount) public view returns(uint256){
+  AggregatorV3Interface priceFeed=AggregatorV3Interface(s_priceFeeds[token]);
+  (,int price,,)=priceFeed.latestRoundData();
+   return ((ADDITIONAL_PRICE_FEED*uint256(price))*amount)/PRECISION;
+}
 }
