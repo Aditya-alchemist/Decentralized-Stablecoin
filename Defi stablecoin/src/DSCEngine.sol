@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /*
  * @title DSCEngine
@@ -29,10 +30,12 @@ contract DSCEngine is ReentrancyGuard{
     error Amount_should_be_more_than_zero();
     error TokenAddressessAndPriceFeedAddressessShouldBeEqual();
     error TokenNotSupported();
+    error transactionFailed();
 
     //state variables
     mapping(address token =>address priceFeed) private s_priceFeeds;
     mapping(address user=>mapping(address tokenaddress=>uint256 amount)) private s_CollateralDeposited;
+    mapping(address user=>uint256 amountDSCminted) private s_DSCMinted;
 
 
     //events
@@ -49,7 +52,7 @@ contract DSCEngine is ReentrancyGuard{
     }
 
     modifier isAllowedToken(address token){
-        if(s_priceFeeds[token]!=address(0)){
+        if(s_priceFeeds[token]==address(0)){
             revert TokenNotSupported();
         }
         _;
@@ -85,6 +88,10 @@ contract DSCEngine is ReentrancyGuard{
      morethanZero(amountCollateral) isAllowedToken(tokenCollateralAddress) nonReentrant{
         s_CollateralDeposited[msg.sender][tokenCollateralAddress]+=amountCollateral;
         emit CollateralDeposited(msg.sender,tokenCollateralAddress,amountCollateral);
+        bool success=IERC20(tokenCollateralAddress).transferFrom(msg.sender,address(this),amountCollateral);
+        if(!success){
+            revert transactionFailed();
+        }
 
      }
 
@@ -92,12 +99,25 @@ contract DSCEngine is ReentrancyGuard{
 
     function redeemCollateral() external {}
 
-    function mintDSC() external{}
+    /*
+    *@notice follows CEI
+    *@param amountDscToMint: The amount of DSC to mint
+    */
+    function mintDSC(uint256 amountDscToMint) external morethanZero(amountDscToMint) nonReentrant
+    {
+        s_DSCMinted[msg.sender]+=amountDscToMint;
+        revertifHealthfactorisBroken(msg.sender);
+                          
+    }
 
     function burnDSC() external{}
 
     function liquidate() external{}
 
     function getHealthFactor() external{}
+
+
+    //private functions
+
 
 }
