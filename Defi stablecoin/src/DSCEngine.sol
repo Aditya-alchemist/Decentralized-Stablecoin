@@ -111,7 +111,7 @@ contract DSCEngine is ReentrancyGuard{
     function mintDSC(uint256 amountDscToMint) external morethanZero(amountDscToMint) nonReentrant
     {
         s_DSCMinted[msg.sender]+=amountDscToMint;
-        revertifHealthfactorisBroken(msg.sender);
+        _revertifHealthfactorisBroken(msg.sender);
                           
     }
 
