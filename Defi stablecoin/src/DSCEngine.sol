@@ -145,7 +145,7 @@ function getAccountCollateralValueinUsd(address user) public view returns(uint25
    for(uint256 i=0;i<s_Collateraltokens.length;i++){
        address token=s_Collateraltokens[i];
        uint256 amount=s_CollateralDeposited[user][token];
-         totalcollateralvalueinusd =getUSDvalue(token,amount);
+         totalcollateralvalueinusd+=getUSDvalue(token,amount);
        
    }
    return totalcollateralvalueinusd;
