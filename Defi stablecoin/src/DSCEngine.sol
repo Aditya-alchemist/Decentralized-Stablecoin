@@ -2,9 +2,10 @@
 pragma solidity 0.8.28;
 
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {AggregatorV3Interface} from
+    "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 /*
  * @title DSCEngine
@@ -42,7 +43,7 @@ contract DSCEngine is ReentrancyGuard {
     uint256 private constant ADDITIONAL_PRICE_FEED = 1e10;
     uint256 private constant PRECISION = 1e18;
     uint256 private constant LIQUIDATION_THRESHOLD = 50;
-    uint256 private constant LIQUIDATION_PRECISIOn = 100;
+    uint256 private constant LIQUIDATION_PRECISION = 100;
     uint256 private constant MIN_HEALTH_FACTOR = 1;
 
     //events
@@ -136,7 +137,7 @@ contract DSCEngine is ReentrancyGuard {
     function _healthFactor(address user) private view returns (uint256) {
         (uint256 totalDSCMinted, uint256 totalDSCValueinUsd) = _Getaccountinfo(user);
         uint256 collateraladjustedforthreshold = (totalDSCValueinUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
-        return (totalDSCValueinUsd * PRECISION) / collateraladjustedforthreshold;
+        return (collateraladjustedforthreshold * PRECISION) / totalDSCMinted;
     }
 
     function _revertifHealthfactorisBroken(address user) internal view {
@@ -157,7 +158,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function getUSDvalue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.latestRoundData();
         return ((ADDITIONAL_PRICE_FEED * uint256(price)) * amount) / PRECISION;
     }
 }
