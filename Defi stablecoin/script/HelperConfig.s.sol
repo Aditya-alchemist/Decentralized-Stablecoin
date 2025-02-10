@@ -25,9 +25,7 @@ contract HelperConfig is Script {
     constructor() {
         if (block.chainid == 11_155_111) {
             activeNetworkConfig = getSepoliaEthConfig();
-        } else {
-            activeNetworkConfig = getOrCreateAnvilEthConfig();
-        }
+        } 
     }
 
     function getSepoliaEthConfig() public view returns (NetworkConfig memory sepoliaNetworkConfig) {
@@ -40,26 +38,5 @@ contract HelperConfig is Script {
         });
     }
 
-    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory anvilNetworkConfig) {
-        // Check to see if we set an active network config
-        if (activeNetworkConfig.wethUsdPriceFeed != address(0)) {
-            return activeNetworkConfig;
-        }
-
-        vm.startBroadcast();
-        MockV3Aggregator ethUsdPriceFeed = new MockV3Aggregator(DECIMALS, ETH_USD_PRICE);
-        ERC20Mock wethMock = new ERC20Mock("WETH", "WETH", msg.sender, 1000e8);
-
-        MockV3Aggregator btcUsdPriceFeed = new MockV3Aggregator(DECIMALS, BTC_USD_PRICE);
-        ERC20Mock wbtcMock = new ERC20Mock("WBTC", "WBTC", msg.sender, 1000e8);
-        vm.stopBroadcast();
-
-        anvilNetworkConfig = NetworkConfig({
-            wethUsdPriceFeed: address(ethUsdPriceFeed), // ETH / USD
-            wbtcUsdPriceFeed: address(btcUsdPriceFeed),
-            weth: address(wethMock),
-            wbtc: address(wbtcMock),
-            deployerKey: DEFAULT_ANVIL_PRIVATE_KEY
-        });
-    }
+   
 }

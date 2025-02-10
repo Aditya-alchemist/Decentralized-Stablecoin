@@ -6,6 +6,7 @@ import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/utils/Reentr
 import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {AggregatorV3Interface} from
     "lib/chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {OracleLib} from "./library/OracleLib.sol";
 
 /*
  * @title DSCEngine
@@ -35,6 +36,9 @@ contract DSCEngine is ReentrancyGuard {
     error transactionFailed();
     error HealthFactorIsBelowOne();
     error HealthFactorIsNOTBELOWONE();
+
+    //types
+    using OracleLib for AggregatorV3Interface;
 
     //state variables
     mapping(address token => address priceFeed) private s_priceFeeds;
@@ -143,12 +147,7 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     function burnDSC(uint256 amount ) public morethanZero(amount){
-        s_DSCMinted[msg.sender] -= amount;
-        bool sucess = i_dsc.transferFrom(msg.sender, address(this), amount);
-        if(!sucess){
-            revert transactionFailed();
-        }
-        i_dsc.burn(amount);
+        _burndsc(amount,msg.sender,msg.sender);
         _revertifHealthfactorisBroken(msg.sender);
         
     }
@@ -176,12 +175,19 @@ contract DSCEngine is ReentrancyGuard {
         uint256 bonouscollateral = (tokenamountfromdebtcoverd * LIQUIDATION_BONOUS) / LIQUIDATION_PRECISION ;
         uint256 totalcollateral = tokenamountfromdebtcoverd + bonouscollateral;
         _redeemCollateral(collateralAddress,totalcollateral, user, msg.sender);
+        _burndsc(debttocover, user, msg.sender);
+        if(Startinguserhaelthfactor>=_healthFactor(user)){
+            revert HealthFactorIsNOTBELOWONE();
+        }
+        _revertifHealthfactorisBroken(msg.sender);
+        
 
 
     }
 
 
     //private functions
+    
     function _Getaccountinfo(address user) private view returns (uint256 TotalDSCMinted, uint256 collateralTotalUsd) {
         TotalDSCMinted = s_DSCMinted[user];
         collateralTotalUsd = getAccountCollateralValueinUsd(user);
@@ -214,12 +220,19 @@ contract DSCEngine is ReentrancyGuard {
      _revertifHealthfactorisBroken(msg.sender);
     } 
 
-
+     function _burndsc(uint256 amountDscTOburn,address onbehalf,address dscFrom) private{
+         s_DSCMinted[onbehalf] -= amountDscTOburn;
+        bool sucess = i_dsc.transferFrom(dscFrom, address(this), amountDscTOburn);
+        if(!sucess){
+            revert transactionFailed();
+        }
+        i_dsc.burn(amountDscTOburn);
+     }
     //public functions
 
     function gettokenamountfromdebtcoverd(address token, uint256 usdamountinwei) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.stalePricecheck();
         return ((usdamountinwei * PRECISION) / (ADDITIONAL_PRICE_FEED * uint256(price)));
     }
 
@@ -234,7 +247,7 @@ contract DSCEngine is ReentrancyGuard {
 
     function getUSDvalue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,,) = priceFeed.latestRoundData();
+        (, int256 price,,,) = priceFeed.stalePricecheck();
         return ((ADDITIONAL_PRICE_FEED * uint256(price)) * amount) / PRECISION;
     }
  
