@@ -13,7 +13,6 @@
 7. [Error Handling](#error-handling)
 8. [Security Considerations](#security-considerations)
 9. [Deployment and Configuration](#deployment-and-configuration)
-10. [Testing & Development](#testing--development)
 11. [Contributing & Future Enhancements](#contributing--future-enhancements)
 12. [License](#license)
 13. [Conclusion](#conclusion)
