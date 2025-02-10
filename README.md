@@ -1,4 +1,4 @@
-# DSCEngine Contract - Detailed Documentation
+# DEFI PROTOCOL 
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -18,6 +18,11 @@
 13. [Conclusion](#conclusion)
 
 ---
+
+The diagram below illustrates how our defi-protocol works using flowchart:
+
+
+[View Full Diagram](https://www.mermaidchart.com/raw/34017944-de69-4eff-b648-225990d6eed1?theme=light&version=v0.1&format=svg)
 
 ## Introduction
 
