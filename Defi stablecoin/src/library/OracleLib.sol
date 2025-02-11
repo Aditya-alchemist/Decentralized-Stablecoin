@@ -10,10 +10,10 @@ library OracleLib{
     function stalePricecheck(AggregatorV3Interface pricefeed) public view returns (uint80,int256,uint256,uint256,uint80){
         (uint80 roundID,int256 price,uint256 startedAt,uint256 timeStamp,uint80 answeredInRound) = pricefeed.latestRoundData();
         uint256 secondsSinceLastUpdate = block.timestamp - timeStamp;
-        if (secondsSinceLastUpdate > TIMEOUT) {
-           revert PRICE_IS_STALE();
-           return (roundID,price,startedAt,timeStamp,answeredInRound);
-        }
+        if (secondsSinceLastUpdate > TIMEOUT)  revert PRICE_IS_STALE();
+                   return (roundID,price,startedAt,timeStamp,answeredInRound);
+
+        
   
     }
 }
